@@ -1,12 +1,20 @@
 FROM openjdk:17-jdk-slim
-# Set the working directory inside the container
+
 WORKDIR /app
 
-# Copy the Spring Boot JAR file into the container
-COPY build/libs/k8s-example-0.0.1-SNAPSHOT.jar /app/app.jar
+# Copy the build.gradle and settings.gradle files first
+# for better cache utilization during Docker build
+COPY build.gradle settings.gradle ./
 
-# Expose the port that the application will run on
-EXPOSE 8080
+COPY gradlew gradlew
+COPY gradle gradle
 
-# Command to run the JAR file
-ENTRYPOINT ["java", "-jar", "/app/app.jar"]
+RUN ./gradlew dependencies
+
+COPY src src
+
+RUN ./gradlew build
+
+COPY build/libs/*.jar app.jar
+
+ENTRYPOINT ["java", "-jar", "app.jar"]
